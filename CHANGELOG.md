@@ -1,3 +1,13 @@
+## [1.2.1](https://github.com/CoCreate-app/CoCreate-aria/compare/v1.2.0...v1.2.1) (2026-07-11)
+
+
+### Bug Fixes
+
+* bump package versions ([2ad08d0](https://github.com/CoCreate-app/CoCreate-aria/commit/2ad08d0434fd16624190902a3da18d3e1aabdee2))
+* removed post install and add add packages to apprved list ([100c02b](https://github.com/CoCreate-app/CoCreate-aria/commit/100c02b93154001d03f2cb9ce6da41ea9c337df2))
+* semantic version handling ([a64a089](https://github.com/CoCreate-app/CoCreate-aria/commit/a64a089292f5d7dd86d6439066081f8d701c8404))
+* update aria-open and aria-close attribute handling to treat them as boolean-like ([608bb59](https://github.com/CoCreate-app/CoCreate-aria/commit/608bb59372d3fc0dabbcda96f8be4ef4e34d8405))
+
 # [1.2.0](https://github.com/CoCreate-app/CoCreate-aria/compare/v1.1.1...v1.2.0) (2026-02-09)
 
 
