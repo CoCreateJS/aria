@@ -1,3 +1,10 @@
+## [1.3.1](https://github.com/CoCreate-app/CoCreate-aria/compare/v1.3.0...v1.3.1) (2026-07-17)
+
+
+### Bug Fixes
+
+* bump dependencies ([81718d0](https://github.com/CoCreate-app/CoCreate-aria/commit/81718d04eb9806d2d841f0728af775465595c2e6))
+
 # [1.3.0](https://github.com/CoCreate-app/CoCreate-aria/compare/v1.2.1...v1.3.0) (2026-07-17)
 
 
