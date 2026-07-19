@@ -1,3 +1,10 @@
+## [1.3.2](https://github.com/CoCreate-app/CoCreate-aria/compare/v1.3.1...v1.3.2) (2026-07-19)
+
+
+### Bug Fixes
+
+* set default branch to main ([36e8f2e](https://github.com/CoCreate-app/CoCreate-aria/commit/36e8f2eaa4fd0a7e4e871737f93a964aaea0f373))
+
 ## [1.3.1](https://github.com/CoCreate-app/CoCreate-aria/compare/v1.3.0...v1.3.1) (2026-07-17)
 
 
