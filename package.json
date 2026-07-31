@@ -1,6 +1,6 @@
 {
   "name": "@cocreate/aria",
-  "version": "1.4.1",
+  "version": "1.5.0",
   "description": "Orchestrate dynamic UI behavior and ARIA state with event-driven action chains, configured via HTML5 attributes or the JavaScript API.",
   "keywords": [
     "aria",
