@@ -1,4 +1,5 @@
 import Observer from '@cocreate/observer';
+import State from '@cocreate/state';
 
 /**
  * Main initialization entry point for ARIA attributes.
@@ -13,6 +14,11 @@ function init(elements) {
         controlsElements = document.querySelectorAll("[aria-controls]");
     }
     initElement(controlsElements);
+
+    // A controlled element is the canonical source when it already has state.
+    // This allows restored state (for example state.aria-hidden) to correct all
+    // of its controllers during initialization.
+    document.querySelectorAll("[id][aria-hidden]").forEach(syncControlledElement);
 
     // 2. Initialize aria-current (Navigation links)
     // Performed after controls to ensure global scan happens last
@@ -132,8 +138,142 @@ function initElement(elements) {
  * @param {string} state - The target state ('true' or 'false').
  */
 function updateAllControls(controlledId, state) {
-    const allControls = document.querySelectorAll(`[aria-controls="${controlledId}"]`);
-    allControls.forEach((ctrl) => ctrl.setAttribute("aria-expanded", state));
+    const allControls = getControls(controlledId);
+    allControls.forEach((ctrl) => setAttributeIfChanged(ctrl, "aria-expanded", state));
+}
+
+/**
+ * Returns every controller referencing an ID. In addition to the common
+ * single-ID form, tolerate whitespace- or comma-separated references.
+ */
+function getControls(controlledId) {
+    return Array.from(document.querySelectorAll("[aria-controls]")).filter(control =>
+        (control.getAttribute("aria-controls") || "")
+            .split(/[\s,]+/)
+            .filter(Boolean)
+            .includes(controlledId)
+    );
+}
+
+/**
+ * Writes an attribute only when its normalized string value changes.
+ * This keeps controller/controlled-element mutation synchronization finite.
+ */
+function setAttributeIfChanged(element, attribute, value) {
+    const nextValue = String(value);
+    if (element.getAttribute(attribute) === nextValue) return false;
+    element.setAttribute(attribute, nextValue);
+    return true;
+}
+
+/**
+ * Applies a controller's aria-expanded value to its controlled element and
+ * synchronizes any other controllers that reference the same element.
+ */
+function syncController(control) {
+    const controlledId = control?.getAttribute?.("aria-controls");
+    if (!controlledId) return;
+
+    const controlledElement = document.getElementById(controlledId);
+    if (!controlledElement) return;
+
+    const expanded = control.getAttribute("aria-expanded") === "true";
+    const controlsClass = control.getAttribute("aria-controls-class") || "show";
+
+    setAttributeIfChanged(controlledElement, "aria-hidden", expanded ? "false" : "true");
+    if (controlsClass) controlledElement.classList.toggle(controlsClass, expanded);
+    updateAllControls(controlledId, expanded ? "true" : "false");
+
+    if (expanded) {
+        const group = control.getAttribute("aria-controls-group");
+        if (group) {
+            const groupedControls = document.querySelectorAll(
+                `[aria-controls-group="${group}"][aria-expanded="true"]`
+            );
+            for (const groupedControl of groupedControls) {
+                const groupedId = groupedControl.getAttribute("aria-controls");
+                if (!groupedId || groupedId === controlledId) continue;
+                updateAllControls(groupedId, "false");
+                syncController(groupedControl);
+            }
+        }
+
+        const closeOn = controlledElement.getAttribute("aria-close-on");
+        if (control.hasAttribute("aria-haspopup") && closeOn !== "btn" && closeOn !== "button") {
+            addPopupListener();
+        }
+    }
+}
+
+/**
+ * Treats aria-hidden on the controlled element as canonical and uses the first
+ * controller to fan that state out to every controller for the same ID.
+ */
+function syncControlledElement(controlledElement) {
+    const controlledId = controlledElement?.id;
+    if (!controlledId || !controlledElement.hasAttribute("aria-hidden")) return;
+
+    const expanded = controlledElement.getAttribute("aria-hidden") !== "true";
+    const expandedValue = expanded ? "true" : "false";
+    const controls = getControls(controlledId);
+    if (!controls.length) return;
+
+    // The controlled element is canonical in this direction. Update every
+    // controller directly rather than depending on one controller to fan out.
+    for (const control of controls) {
+        setAttributeIfChanged(control, "aria-expanded", expandedValue);
+    }
+
+    const controlsClass = controls[0].getAttribute("aria-controls-class") || "show";
+    if (controlsClass) controlledElement.classList.toggle(controlsClass, expanded);
+}
+
+/**
+ * Initializes a newly added controller from its controlled element when that
+ * element already has aria-hidden state. Initialization never writes state
+ * from a controller to a controlled element.
+ */
+function syncAddedController(control) {
+    const controlledId = control?.getAttribute?.("aria-controls");
+    if (!controlledId) return;
+
+    const controlledElement = document.getElementById(controlledId);
+    if (!controlledElement) return;
+
+    if (controlledElement.hasAttribute("aria-hidden")) {
+        syncControlledElement(controlledElement);
+    }
+}
+
+/**
+ * Persists a controlled element's ARIA state when it explicitly opts into
+ * state persistence with state-id and state.aria-hidden.
+ */
+function syncControlledElementState(controlledElement) {
+    if (
+        !controlledElement?.hasAttribute?.("state.aria-hidden") ||
+        !controlledElement.hasAttribute("state-id")
+    ) return;
+
+    const value = controlledElement.getAttribute("aria-hidden");
+    if (value === null) return;
+
+    const stateIds = controlledElement.getAttribute("state-id")
+        .split(",")
+        .map(id => id.trim())
+        .filter(Boolean);
+    if (!stateIds.length) return;
+
+    const state = {};
+    for (const stateId of stateIds) {
+        state[stateId] = { "aria-hidden": value };
+    }
+
+    State.setState(state, {
+        localStorage:
+            controlledElement.hasAttribute("state-localstorage") ||
+            controlledElement.hasAttribute("state-onstoragechange")
+    });
 }
 
 /**
@@ -333,6 +473,42 @@ Observer.init({
     selector: "[aria-controls]",
     callback: function (mutation) {
         initElement(mutation.target);
+        syncAddedController(mutation.target);
+    }
+});
+
+// Observer: Apply externally changed controller state to its controlled element.
+Observer.init({
+    name: "aria-controller-state",
+    types: ["attributes"],
+    selector: "[aria-controls]",
+    attributeFilter: ["aria-expanded"],
+    callback: function (mutation) {
+        const element = mutation.target;
+        const currentValue = element.getAttribute(mutation.attributeName);
+        if (mutation.oldValue === currentValue) return;
+        syncController(element);
+    }
+});
+
+// Observer: Treat externally changed controlled-element state as canonical and
+// synchronize every controller that references it.
+Observer.init({
+    name: "aria-controlled-state",
+    types: ["addedNodes", "attributes"],
+    selector: "[aria-hidden]",
+    attributeFilter: ["aria-hidden"],
+    callback: function (mutation) {
+        const element = mutation.target;
+        if (!element.id) return;
+
+        if (mutation.type === "attributes") {
+            const currentValue = element.getAttribute(mutation.attributeName);
+            if (mutation.oldValue === currentValue) return;
+        }
+
+        syncControlledElement(element);
+        if (mutation.type === "attributes") syncControlledElementState(element);
     }
 });
 
@@ -350,4 +526,13 @@ Observer.init({
 // Initial execution
 init();
 
-export { init, initElement, setAriaCurrent };
+export {
+    init,
+    initElement,
+    setAriaCurrent,
+    syncController,
+    syncAddedController,
+    syncControlledElement,
+    syncControlledElementState,
+    getControls
+};
