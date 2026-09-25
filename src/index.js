@@ -72,11 +72,6 @@ function initElement(elements) {
 
         control.addEventListener("click", function (event) {
             if (isSelectionControl(this)) return;
-            // Only prevent default if it's not a standard link leading to another page
-            const href = this.getAttribute("href");
-            if (!href || href.startsWith("#") || this.hasAttribute("aria-haspopup")) {
-                event.preventDefault();
-            }
 
             const controlledId = this.getAttribute("aria-controls");
             const controlledElement = document.getElementById(controlledId);
@@ -517,6 +512,17 @@ function getOpenPopupControls() {
     );
 }
 
+function isInteractionInside(element, target) {
+    if (element.contains(target)) return true;
+
+    // Activating <label for="…"> dispatches a second native click on its
+    // associated control. The control may live outside a visual popup even
+    // though the label that initiated the interaction is inside it.
+    return Array.from(target?.labels || []).some(label =>
+        element.contains(label)
+    );
+}
+
 function addPopupListener() {
     if (!popupListener) {
         popupListener = function (event) {
@@ -552,11 +558,12 @@ function addPopupListener() {
 
                 let closeOnConditions = closeOn ? closeOn.split(",").map(c => c.trim()) : [];
                 let shouldClose = false;
+                const interactionInside = isInteractionInside(closeOnEl, event.target);
 
                 for (let condition of closeOnConditions) {
-                    if (condition === "outside" && !closeOnEl.contains(event.target)) {
+                    if (condition === "outside" && !interactionInside) {
                         shouldClose = true;
-                    } else if (condition === "inside" && closeOnEl.contains(event.target)) {
+                    } else if (condition === "inside" && interactionInside) {
                         shouldClose = true;
                     } else if (condition === "anywhere") {
                         shouldClose = true;
