@@ -556,7 +556,11 @@ function addPopupListener() {
                     if (closeOnEl) closeOn = closeOnEl.getAttribute("aria-close-on");
                 }
 
-                let closeOnConditions = closeOn ? closeOn.split(",").map(c => c.trim()) : [];
+                // A popup trigger can provide aria-haspopup for accessibility
+                // without opting into automatic click-based closing.
+                if (!closeOn || !closeOnEl) continue;
+
+                let closeOnConditions = closeOn.split(",").map(c => c.trim());
                 let shouldClose = false;
                 const interactionInside = isInteractionInside(closeOnEl, event.target);
 
