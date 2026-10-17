@@ -31,6 +31,7 @@ function init(elements) {
  * @param {Element|Element[]|NodeList} elements - Elements to be initialized as ARIA controls.
  */
 const interactiveSelector = '[aria-controls], [aria-pressed], [role="radio"], [role="checkbox"], [role="switch"], :is([role="row"][aria-selected]), :is([role="grid"][aria-multiselectable="true"] [role="row"] input[type="checkbox"])';
+const addedInteractiveSelector = '[aria-controls], [aria-pressed], [role="radio"], [role="checkbox"], [role="switch"], [aria-selected], input[type="checkbox"]';
 const initialized = new WeakSet();
 
 function initElement(elements) {
@@ -58,13 +59,9 @@ function initElement(elements) {
         syncSelection(control);
         control.addEventListener("click", event => {
             const selection = getSelection(control, true);
-            if (selection?.role === "row") {
-                selectGridRow(control, event);
-                return;
-            }
+            if (selection?.role === "row") return;
             if (selection?.native) {
                 syncLinkedSelection(control, selection, control.checked);
-                if (selection.role === "checkbox") selectGridCheckbox(control, event);
                 return;
             }
             if (!selection || selection.attribute === "aria-selected") return;
@@ -327,6 +324,20 @@ function selectGridCheckbox(checkbox, event) {
     }
 }
 
+// Rendered cards and table rows can arrive after the initial ARIA scan.
+// Handle their clicks at the grid so selection does not depend on binding
+// each new record before its first interaction.
+document.addEventListener("click", event => {
+    const checkbox = event.target.closest('input[type="checkbox"]');
+    if (checkbox?.closest('[role="row"]')?.closest('[role="grid"][aria-multiselectable="true"]')) {
+        selectGridCheckbox(checkbox, event);
+        return;
+    }
+
+    const row = event.target.closest('[role="row"][aria-selected]');
+    if (row) selectGridRow(row, event);
+});
+
 function handleGridRowKey(event, row) {
     if (event.target !== row) return;
     const items = gridRows(row);
@@ -372,11 +383,6 @@ function handleGridRowKey(event, row) {
     } else focusGridRow(next, items);
     next.scrollIntoView({ block: "nearest", inline: "nearest" });
 }
-
-document.addEventListener("gridselectionreset", event => {
-    const grid = event.target.closest('[role="grid"][aria-multiselectable="true"]');
-    if (grid) gridAnchors.delete(grid);
-});
 
 document.addEventListener("mousedown", event => {
     if (event.shiftKey && event.target.closest('[role="grid"][aria-multiselectable="true"]') &&
@@ -863,7 +869,7 @@ document.addEventListener("keydown", handleEscapeKey);
 Observer.init({
     name: "aria-controls",
     types: ["addedNodes"],
-    selector: interactiveSelector,
+    selector: addedInteractiveSelector,
     callback: function (mutation) {
         initElement(mutation.target);
         syncAddedController(mutation.target);
