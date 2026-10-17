@@ -163,3 +163,38 @@ native `checked` property and keyboard behavior, without redundant `aria-checked
 or `aria-pressed` attributes. When coordination changes another native input,
 CoCreate dispatches `input` and `change` after the linked values are updated;
 unselected radios do not dispatch these notifications.
+
+## Multiselectable grids
+
+An element with `role="grid" aria-multiselectable="true"` scopes selection to
+its descendant rows. Mark selectable rows with `role="row"` and
+`aria-selected="false"`; include a `gridcell` in each row. Native `table`, `tr`,
+and `td` elements provide the corresponding row and cell structure. The module
+sets one row in the grid's tab sequence and leaves selection on the row's
+`aria-selected` attribute so other actions can query it directly.
+
+```html
+<div role="grid" aria-label="Files" aria-multiselectable="true">
+    <div role="row" aria-selected="false">
+        <div role="gridcell">Document A</div>
+    </div>
+    <div role="row" aria-selected="false">
+        <div role="gridcell">Document B</div>
+    </div>
+</div>
+```
+
+Click selects one row; Control/Command-click toggles one row; Shift-click
+selects a range; and Control/Command-Shift-click adds a range. Arrow keys and
+Home/End move focus without changing selection. Space toggles the focused row,
+Shift with an arrow extends selection, Control/Command-A selects the loaded
+rows, and Escape clears them. These interactions do not activate links or other
+controls inside a row. Selection actions are scoped to the nearest grid.
+
+A grid row can instead contain a native checkbox. Its own `checked` state is
+the selection state; the row does not need `aria-selected`. Checkbox clicks
+toggle independently, including Control/Command-click. Shift-click applies
+the clicked checkbox's new state to the range since the last checkbox click.
+Checkboxes with the same `name` form a range within one grid. CoCreate Aria
+does not synchronize checkbox `checked` with row `aria-selected`; an app can
+bind them explicitly when it needs both.

@@ -30,7 +30,7 @@ function init(elements) {
  * accessibility state changes (aria-expanded, aria-hidden, aria-selected).
  * @param {Element|Element[]|NodeList} elements - Elements to be initialized as ARIA controls.
  */
-const interactiveSelector = '[aria-controls], [aria-pressed], [role="radio"], [role="checkbox"], [role="switch"]';
+const interactiveSelector = '[aria-controls], [aria-pressed], [role="radio"], [role="checkbox"], [role="switch"], :is([role="row"][aria-selected]), :is([role="grid"][aria-multiselectable="true"] [role="row"] input[type="checkbox"])';
 const initialized = new WeakSet();
 
 function initElement(elements) {
@@ -56,10 +56,15 @@ function initElement(elements) {
         }, true);
         control.addEventListener("keydown", handleSelectionKey);
         syncSelection(control);
-        control.addEventListener("click", () => {
+        control.addEventListener("click", event => {
             const selection = getSelection(control, true);
+            if (selection?.role === "row") {
+                selectGridRow(control, event);
+                return;
+            }
             if (selection?.native) {
                 syncLinkedSelection(control, selection, control.checked);
+                if (selection.role === "checkbox") selectGridCheckbox(control, event);
                 return;
             }
             if (!selection || selection.attribute === "aria-selected") return;
@@ -206,6 +211,9 @@ function getSelection(control, includeNative = false) {
         } : null;
     }
     const role = control.getAttribute("role");
+    if (role === "row" && control.hasAttribute("aria-selected") &&
+        control.closest('[role="grid"][aria-multiselectable="true"]'))
+        return { attribute: "aria-selected", role, groupRole: "grid" };
     if (role === "tab") return { attribute: "aria-selected", exclusive: true, groupRole: "tablist", role };
     if (role === "radio") return { attribute: "aria-checked", exclusive: true, groupRole: "radiogroup", role };
     if (role === "checkbox" || role === "switch") return { attribute: "aria-checked" };
@@ -228,11 +236,15 @@ function availableItems(items) {
         !item.closest('[aria-hidden="true"], [hidden]:not([aria-hidden="false"]), [template], template'));
 }
 
+function setTabStop(items, entry) {
+    for (const item of items) setAttributeIfChanged(item, "tabindex", item === entry ? "0" : "-1");
+}
+
 function updateRadioTabStops(control, selection) {
     const items = getGroupItems(control, selection.role, selection.groupRole);
     const available = availableItems(items);
     const entry = available.find(item => item.getAttribute(selection.attribute) === "true") || available[0];
-    for (const item of items) setAttributeIfChanged(item, "tabindex", item === entry ? "0" : "-1");
+    setTabStop(items, entry);
 }
 
 function selectItem(control, selection, selected) {
@@ -243,6 +255,133 @@ function selectItem(control, selection, selected) {
     }
     if (selection.role === "radio") updateRadioTabStops(control, selection);
 }
+
+const gridAnchors = new WeakMap();
+const gridInteractive = 'a,button,input,textarea,select,label,[contenteditable]:not([contenteditable="false"]),[role="button"],[role="checkbox"],[role="radio"],[role="switch"]';
+
+function gridRows(row) {
+    return availableItems(getGroupItems(row, "row", "grid"))
+        .filter(item => item.hasAttribute("aria-selected") &&
+            !item.closest('[hidden],[template],template'));
+}
+
+function syncGridTabStops(row) {
+    const items = gridRows(row);
+    if (!items.length) return;
+    setTabStop(items, items.find(item => item.tabIndex === 0) || items[0]);
+}
+
+function focusGridRow(row, items) {
+    setTabStop(items, row);
+    row.focus({ preventScroll: true });
+}
+
+function selectGridRow(row, event) {
+    const grid = row.closest('[role="grid"][aria-multiselectable="true"]');
+    const items = gridRows(row);
+    if (!grid || !items.includes(row)) return;
+    if (event.target.closest(gridInteractive)) return;
+
+    const anchor = gridAnchors.get(grid);
+    if (event.shiftKey && items.includes(anchor)) {
+        const start = items.indexOf(anchor);
+        const end = items.indexOf(row);
+        for (let index = 0; index < items.length; index++) {
+            const inRange = index >= Math.min(start, end) && index <= Math.max(start, end);
+            const selected = inRange || ((event.ctrlKey || event.metaKey) && items[index].getAttribute("aria-selected") === "true");
+            setSelectionState(items[index], "aria-selected", selected);
+        }
+    } else {
+        const toggle = event.ctrlKey || event.metaKey;
+        const selected = row.getAttribute("aria-selected") !== "true";
+        for (const item of items) {
+            if (!toggle || item === row)
+                setSelectionState(item, "aria-selected", item === row && (toggle ? selected : true));
+        }
+        gridAnchors.set(grid, row);
+    }
+    focusGridRow(row, items);
+}
+
+function selectGridCheckbox(checkbox, event) {
+    const row = checkbox.closest('[role="row"]');
+    const grid = row?.closest('[role="grid"][aria-multiselectable="true"]');
+    if (!grid) return;
+    const items = availableItems(Array.from(grid.querySelectorAll('[role="row"] input[type="checkbox"]')))
+        .filter(item => item.name === checkbox.name &&
+            item.closest('[role="grid"]') === grid &&
+            !isDisabled(item.closest('[role="row"]')) &&
+            !item.closest('[hidden],[template],template'));
+    const anchor = gridAnchors.get(grid);
+    if (!event.shiftKey || !items.includes(anchor) || !items.includes(checkbox)) {
+        gridAnchors.set(grid, checkbox);
+        return;
+    }
+    const start = items.indexOf(anchor);
+    const end = items.indexOf(checkbox);
+    for (const item of items.slice(Math.min(start, end), Math.max(start, end) + 1)) {
+        if (item === checkbox || item.checked === checkbox.checked) continue;
+        item.checked = checkbox.checked;
+        item.dispatchEvent(new Event("input", { bubbles: true }));
+        item.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+}
+
+function handleGridRowKey(event, row) {
+    if (event.target !== row) return;
+    const items = gridRows(row);
+    if (!items.includes(row)) return;
+    const grid = row.closest('[role="grid"][aria-multiselectable="true"]');
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "a") {
+        event.preventDefault();
+        for (const item of items) setSelectionState(item, "aria-selected", true);
+        gridAnchors.delete(grid);
+        return;
+    }
+    if (event.key === "Escape") {
+        event.preventDefault();
+        for (const item of items) setSelectionState(item, "aria-selected", false);
+        gridAnchors.delete(grid);
+        return;
+    }
+    if (event.key === " " || event.key === "Spacebar") {
+        event.preventDefault();
+        selectGridRow(row, { target: row, shiftKey: event.shiftKey, ctrlKey: true, metaKey: event.metaKey });
+        return;
+    }
+    const index = items.indexOf(row);
+    let next;
+    if (event.key === "Home") next = items[0];
+    else if (event.key === "End") next = items.at(-1);
+    else if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+        const rtl = getComputedStyle(grid).direction === "rtl";
+        next = items[index + ((event.key === "ArrowRight") !== rtl ? 1 : -1)];
+    } else if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+        const box = row.getBoundingClientRect();
+        const direction = event.key === "ArrowDown" ? 1 : -1;
+        next = items.map(item => ({ item, box: item.getBoundingClientRect() }))
+            .filter(candidate => (candidate.box.top - box.top) * direction > 1)
+            .sort((a, b) => Math.abs(a.box.top - box.top) - Math.abs(b.box.top - box.top) ||
+                Math.abs(a.box.left - box.left) - Math.abs(b.box.left - box.left))[0]?.item;
+    } else return;
+    event.preventDefault();
+    if (!next) return;
+    if (event.shiftKey) {
+        if (!items.includes(gridAnchors.get(grid))) gridAnchors.set(grid, row);
+        selectGridRow(next, { target: next, shiftKey: true, ctrlKey: event.ctrlKey, metaKey: event.metaKey });
+    } else focusGridRow(next, items);
+    next.scrollIntoView({ block: "nearest", inline: "nearest" });
+}
+
+document.addEventListener("gridselectionreset", event => {
+    const grid = event.target.closest('[role="grid"][aria-multiselectable="true"]');
+    if (grid) gridAnchors.delete(grid);
+});
+
+document.addEventListener("mousedown", event => {
+    if (event.shiftKey && event.target.closest('[role="grid"][aria-multiselectable="true"]') &&
+        !event.target.closest(gridInteractive)) event.preventDefault();
+});
 
 function syncLinkedSelection(control, selection, selected) {
     const ids = (control.getAttribute("aria-controls") || "").split(/[\s,]+/).filter(Boolean);
@@ -296,6 +435,10 @@ function syncLinkedSelection(control, selection, selected) {
 
 function syncSelection(control) {
     const selection = getSelection(control);
+    if (selection?.role === "row") {
+        syncGridTabStops(control);
+        return;
+    }
     if (!selection || selection.attribute === "aria-selected") return;
     const value = control.getAttribute(selection.attribute);
     if (selection.exclusive && value === "true") {
@@ -335,6 +478,10 @@ function handleSelectionKey(event) {
             event.preventDefault();
             event.stopImmediatePropagation();
         }
+        return;
+    }
+    if (selection.role === "row") {
+        handleGridRowKey(event, control);
         return;
     }
     let items = selection.exclusive
@@ -723,15 +870,28 @@ Observer.init({
     }
 });
 
+Observer.init({
+    name: "aria-grid-row-removed",
+    types: ["removedNodes"],
+    selector: ':is([role="row"][aria-selected])',
+    callback: function (mutation) {
+        const grid = mutation.mutationOrigin.closest('[role="grid"][aria-multiselectable="true"]');
+        const row = grid?.querySelector('[role="row"][aria-selected]');
+        if (row) syncGridTabStops(row);
+    }
+});
+
 // Selection changes from state restoration or other modules use the same logic.
 Observer.init({
     name: "aria-selection-state",
     types: ["attributes"],
     selector: interactiveSelector,
-    attributeFilter: ["aria-pressed", "aria-checked", "aria-disabled", "disabled", "role"],
+    attributeFilter: ["aria-pressed", "aria-checked", "aria-selected", "aria-disabled", "disabled", "role"],
     callback: function (mutation) {
         if (mutation.oldValue === mutation.target.getAttribute(mutation.attributeName)) return;
         initElement(mutation.target);
+        // Selection changes do not alter the grid's roving tab stop.
+        if (mutation.attributeName === "aria-selected" && mutation.target.getAttribute("role") === "row") return;
         syncSelection(mutation.target);
     }
 });
@@ -746,6 +906,13 @@ Observer.init({
         for (const radio of mutation.target.querySelectorAll('[role="radio"]')) {
             const selection = getSelection(radio);
             if (selection) updateRadioTabStops(radio, selection);
+        }
+        const grids = new Set(mutation.target.querySelectorAll('[role="grid"][aria-multiselectable="true"]'));
+        const grid = mutation.target.closest('[role="grid"][aria-multiselectable="true"]');
+        if (grid) grids.add(grid);
+        for (const item of grids) {
+            const row = item.querySelector('[role="row"][aria-selected]');
+            if (row) syncGridTabStops(row);
         }
     }
 });
