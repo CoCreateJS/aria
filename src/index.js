@@ -706,6 +706,8 @@ function addPopupListener() {
                 let closeOnEl = controlledElement;
                 if (!closeOn) {
                     closeOnEl = event.target.closest(`#${controlledId} [aria-close-on]`);
+                    // A nested popup owns its close rule; it must not close the parent panel.
+                    if (closeOnEl && getControls(closeOnEl.id).length) continue;
                     if (closeOnEl) closeOn = closeOnEl.getAttribute("aria-close-on");
                 }
 
