@@ -643,7 +643,7 @@ function syncControlledElementState(controlledElement) {
         for (const [storage, state] of Object.entries(groups)) {
             if (!Object.keys(state).length) continue;
             let snapshot = {};
-            try { snapshot = JSON.parse(window.history.state?.[`${storage}State`] || '{}'); } catch {}
+            try { snapshot = JSON.parse(window.history.state?.[`${storage}State`] || '{}'); } catch { }
             // State restoration already owns this history entry. Do not push
             // it again when ARIA observes the restored attributes.
             if (Object.entries(state).every(([id, value]) => snapshot?.[id]?.["aria-hidden"] === value["aria-hidden"])) continue;
@@ -661,7 +661,7 @@ let popupListener = null;
 function getOpenPopupControls() {
     return Array.from(document.querySelectorAll('[aria-controls][aria-expanded="true"]')).filter(control =>
         !isSelectionControl(control) && (control.hasAttribute("aria-haspopup") ||
-        document.getElementById(control.getAttribute("aria-controls"))?.hasAttribute("aria-close-on"))
+            document.getElementById(control.getAttribute("aria-controls"))?.hasAttribute("aria-close-on"))
     );
 }
 
@@ -967,7 +967,7 @@ Observer.init({
     name: "aria-current",
     types: ["addedNodes", "attributes"],
     selector: "a[href]",
-    attributeFilters: ["href"],
+    attributeFilter: ["href"],
     callback: function (mutation) {
         setAriaCurrent(mutation.target);
     }
