@@ -6,6 +6,8 @@ import State from '@cocreate/state';
  * Orchestrates the setup of interactive controls and navigation states.
  * @param {Element|Element[]|NodeList} [elements] - Optional specific elements to initialize.
  * If omitted, the script scans the document for controls, toggles, and custom checked controls.
+ * @public
+ * @environment client
  */
 function init(elements) {
     // 1. Initialize aria-controls (Toggles, Popups, Tabs)
@@ -34,6 +36,11 @@ const interactiveSelector = '[aria-controls], [aria-pressed], [role="radio"], [r
 const addedInteractiveSelector = '[aria-controls], [aria-pressed], [role="radio"], [role="checkbox"], [role="switch"], [aria-selected], input[type="checkbox"]';
 const initialized = new WeakSet();
 
+/**
+ *
+ * @public
+ * @environment client
+ */
 function initElement(elements) {
     if (
         !Array.isArray(elements) &&
@@ -143,6 +150,8 @@ function initElement(elements) {
  * Synchronizes aria-expanded state across all elements controlling the same ID.
  * @param {string} controlledId - The ID of the target element.
  * @param {string} state - The target state ('true' or 'false').
+ * @private
+ * @environment client
  */
 function updateAllControls(controlledId, state) {
     const allControls = getControls(controlledId);
@@ -157,6 +166,8 @@ function updateAllControls(controlledId, state) {
 /**
  * Returns every controller referencing an ID. In addition to the common
  * single-ID form, tolerate whitespace- or comma-separated references.
+ * @public
+ * @environment client
  */
 function getControls(controlledId) {
     return Array.from(document.querySelectorAll("[aria-controls]")).filter(control =>
@@ -170,6 +181,8 @@ function getControls(controlledId) {
 /**
  * Writes an attribute only when its normalized string value changes.
  * This keeps controller/controlled-element mutation synchronization finite.
+ * @private
+ * @environment client
  */
 function setAttributeIfChanged(element, attribute, value) {
     const nextValue = String(value);
@@ -520,6 +533,8 @@ function handleSelectionKey(event) {
 /**
  * Applies a controller's aria-expanded value to its controlled element and
  * synchronizes any other controllers that reference the same element.
+ * @public
+ * @environment client
  */
 function syncController(control) {
     const controlledId = control?.getAttribute?.("aria-controls");
@@ -565,6 +580,8 @@ function syncController(control) {
 /**
  * Treats aria-hidden on the controlled element as canonical and uses the first
  * controller to fan that state out to every controller for the same ID.
+ * @public
+ * @environment client
  */
 function syncControlledElement(controlledElement) {
     const controlledId = controlledElement?.id;
@@ -592,6 +609,8 @@ function syncControlledElement(controlledElement) {
  * Initializes a newly added controller from its controlled element when that
  * element already has aria-hidden state. Initialization never writes state
  * from a controller to a controlled element.
+ * @public
+ * @environment client
  */
 function syncAddedController(control) {
     const controlledId = control?.getAttribute?.("aria-controls");
@@ -611,6 +630,11 @@ function syncAddedController(control) {
  */
 const pendingStateElements = new Set();
 let stateTimer;
+/**
+ *
+ * @public
+ * @environment client
+ */
 function syncControlledElementState(controlledElement) {
     if (!controlledElement?.hasAttribute?.("state.aria-hidden") ||
         !controlledElement.hasAttribute("state-id")) return;
@@ -748,6 +772,8 @@ function addPopupListener() {
 
 /**
  * Removes the global popup click listener.
+ * @private
+ * @environment client
  */
 function removePopupListener() {
     if (popupListener) {
@@ -759,6 +785,8 @@ function removePopupListener() {
 /**
  * Binds the Escape key to close the controlled element.
  * @param {Element} control - The trigger element that controls the target.
+ * @private
+ * @environment client
  */
 function initEscapeKey(control) {
     const controlledId = control.getAttribute("aria-controls");
@@ -772,6 +800,8 @@ function initEscapeKey(control) {
 /**
  * Global handler for the Escape key to close open interactive elements.
  * @param {KeyboardEvent} event - The keyboard event object.
+ * @private
+ * @environment client
  */
 function handleEscapeKey(event) {
     if (event.key === "Escape") {
@@ -790,6 +820,8 @@ function handleEscapeKey(event) {
  * the current URL and hash. Assigns aria-current="page" or "location".
  * @param {Element|Element[]|NodeList} [elements] - Links or containers to scan.
  * Defaults to all a[href] if not provided.
+ * @public
+ * @environment client
  */
 function setAriaCurrent(elements) {
     if (!elements) {
@@ -856,6 +888,8 @@ function setAriaCurrent(elements) {
  * Sanitizes and normalizes URL paths to prevent trailing slash mismatches.
  * @param {string} path - The raw URL path.
  * @returns {string} The normalized path string.
+ * @private
+ * @environment client
  */
 const normalizePath = (path) => path.replace(/\/$/, "") || "/";
 
@@ -986,3 +1020,223 @@ export {
     syncControlledElementState,
     getControls
 };
+
+/**
+ *
+ * @name aria-checked
+ * @kind member
+ * @attribute
+ * @environment client
+ */
+
+/**
+ *
+ * @name aria-close
+ * @kind member
+ * @attribute
+ * @environment client
+ */
+
+/**
+ *
+ * @name aria-close-on
+ * @kind member
+ * @attribute
+ * @environment client
+ */
+
+/**
+ *
+ * @name aria-controls
+ * @kind member
+ * @attribute
+ * @environment client
+ */
+
+/**
+ *
+ * @name aria-controls-class
+ * @kind member
+ * @attribute
+ * @environment client
+ */
+
+/**
+ *
+ * @name aria-controls-group
+ * @kind member
+ * @attribute
+ * @environment client
+ */
+
+/**
+ *
+ * @name aria-current
+ * @kind member
+ * @attribute
+ * @environment client
+ */
+
+/**
+ *
+ * @name aria-default
+ * @kind member
+ * @attribute
+ * @environment client
+ */
+
+/**
+ *
+ * @name aria-disabled
+ * @kind member
+ * @attribute
+ * @environment client
+ */
+
+/**
+ *
+ * @name aria-expanded
+ * @kind member
+ * @attribute
+ * @environment client
+ */
+
+/**
+ *
+ * @name aria-haspopup
+ * @kind member
+ * @attribute
+ * @environment client
+ */
+
+/**
+ *
+ * @name aria-hidden
+ * @kind member
+ * @attribute
+ * @environment client
+ */
+
+/**
+ *
+ * @name aria-open
+ * @kind member
+ * @attribute
+ * @environment client
+ */
+
+/**
+ *
+ * @name aria-orientation
+ * @kind member
+ * @attribute
+ * @environment client
+ */
+
+/**
+ *
+ * @name aria-pressed
+ * @kind member
+ * @attribute
+ * @environment client
+ */
+
+/**
+ *
+ * @name aria-selected
+ * @kind member
+ * @attribute
+ * @environment client
+ */
+
+/**
+ *
+ * @name disabled
+ * @kind member
+ * @attribute
+ * @environment client
+ */
+
+/**
+ *
+ * @name hidden
+ * @kind member
+ * @attribute
+ * @environment client
+ */
+
+/**
+ *
+ * @name href
+ * @kind member
+ * @attribute
+ * @environment client
+ */
+
+/**
+ *
+ * @name role
+ * @kind member
+ * @attribute
+ * @environment client
+ */
+
+/**
+ *
+ * @name state-id
+ * @kind member
+ * @attribute
+ * @environment client
+ */
+
+/**
+ *
+ * @name state-localstorage
+ * @kind member
+ * @attribute
+ * @environment client
+ */
+
+/**
+ *
+ * @name state-onstoragechange
+ * @kind member
+ * @attribute
+ * @environment client
+ */
+
+/**
+ *
+ * @name tabindex
+ * @kind member
+ * @attribute
+ * @environment client
+ */
+
+/**
+ * Orchestrate dynamic UI behavior and ARIA state with event-driven action chains, configured via HTML5 attributes or the JavaScript API.
+ *
+ * @module aria
+ * @environment client
+ */
+
+/**
+ * Declarative selectors recognized by this module.
+ *
+ * @name declarative-selectors
+ * @kind member
+ * @selectors
+ * @environment client
+ * @example
+ * ```json
+ * [
+ *   ":is([role=\"row\"][aria-selected])",
+ *   "*",
+ *   "[aria-controls]",
+ *   "[aria-hidden]",
+ *   "a[href]",
+ *   "[aria-controls], [aria-pressed], [role=\"radio\"], [role=\"checkbox\"], [role=\"switch\"], :is([role=\"row\"][aria-selected]), :is([role=\"grid\"][aria-multiselectable=\"true\"] [role=\"row\"] input[type=\"checkbox\"])",
+ *   "[aria-controls], [aria-pressed], [role=\"radio\"], [role=\"checkbox\"], [role=\"switch\"], [aria-selected], input[type=\"checkbox\"]"
+ * ]
+ * ```
+ */
