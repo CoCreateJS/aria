@@ -1,3 +1,29 @@
+# [2.0.0](https://github.com/CoCreateJS/aria/compare/v1.3.2...v2.0.0) (2026-11-02)
+
+
+### Bug Fixes
+
+* add Deno specific entries to .gitignore ([e4ecba9](https://github.com/CoCreateJS/aria/commit/e4ecba9483cdb38446b691a41e3f48751a3d76a9))
+* avoid closing unconfigured popup triggers ([bc08a16](https://github.com/CoCreateJS/aria/commit/bc08a169bd2e4b6cb37725a72bc7f96a9feaea58))
+* bump [@cocreate](https://github.com/cocreate) dependencies ([1a13ab0](https://github.com/CoCreateJS/aria/commit/1a13ab0b08b55fc4876f95fd6ea6609915f7d022))
+* bump versions ([c2463fa](https://github.com/CoCreateJS/aria/commit/c2463faa4f8d885ef4101e50436ba68d7d13d204))
+* bump versions ([816a7b0](https://github.com/CoCreateJS/aria/commit/816a7b0d5a05db62fc64053a47d053602f15eac6))
+* enhance ARIA control initialization and selection handling ([1f89432](https://github.com/CoCreateJS/aria/commit/1f89432fa0f85d06c129d1e34a27280dc8a93119))
+* preserve native popup interactions ([8c2574b](https://github.com/CoCreateJS/aria/commit/8c2574bd1646f6e5e2ecfcab799f32204f38e8b2))
+* remove trailing slash from node_modules entry in .gitignore ([0afb83e](https://github.com/CoCreateJS/aria/commit/0afb83e605bec7eaeeac4278b4ad18a19c747313))
+* update git url ([b1a4ee6](https://github.com/CoCreateJS/aria/commit/b1a4ee6adbb3289a0add83f4d18a00675729f128))
+* update GitHub Actions to use latest versions and sync package.json description ([ab3a85b](https://github.com/CoCreateJS/aria/commit/ab3a85b7d4a384f423ed6cd6cc21d2ac16867d64))
+
+
+### Features
+
+* align CoCreate repository and package naming ([39a5de4](https://github.com/CoCreateJS/aria/commit/39a5de421c7a6bec3a9c90745ce21bea8718d594))
+
+
+### BREAKING CHANGES
+
+* consumers must use the renamed CoCreate package and repository identities; the previous prefixed names are no longer supported.
+
 ## [1.3.2](https://github.com/CoCreateJS/CoCreate-aria/compare/v1.3.1...v1.3.2) (2026-07-19)
 
 
