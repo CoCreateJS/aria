@@ -1,19 +1,19 @@
 # Contributing to CoCreate-aria
 
-This project is work of [many contributors](https://github.com/CoCreateJS/CoCreate-aria/graphs/contributors).
-You're encouraged to submit [pull requests](https://github.com/CoCreateJS/CoCreate-aria/pulls),
-[propose features and discuss issues](https://github.com/CoCreateJS/CoCreate-aria/issues).
+This project is work of [many contributors](https://github.com/CoCreateJS/aria/graphs/contributors).
+You're encouraged to submit [pull requests](https://github.com/CoCreateJS/aria/pulls),
+[propose features and discuss issues](https://github.com/CoCreateJS/aria/issues).
 
 In the examples below, substitute your Github username for `contributor` in URLs.
 
 ## Fork the Project
 
-Fork the [project on Github](https://github.com/CoCreateJS/CoCreate-aria) and check out your copy.
+Fork the [project on Github](https://github.com/CoCreateJS/aria) and check out your copy.
 
 ```
 git clone https://github.com/contributor/CoCreate-aria.git
 cd CoCreate-aria
-git remote add upstream https://github.com/cocreatejs/CoCreate-aria.git
+git remote add upstream https://github.com/CoCreateJS/aria.git
 ```
 
 ## Create a Topic Branch
@@ -70,7 +70,7 @@ git push origin my-feature-branch
 
 ## Make a Pull Request
 
-Go to [https://github.com/CoCreateJS/CoCreate-aria](https://github.com/CoCreateJS/CoCreate-aria) and select your feature branch.
+Go to [https://github.com/CoCreateJS/aria](https://github.com/CoCreateJS/aria) and select your feature branch.
 Click the 'Pull Request' button and fill out the form. Pull requests are usually reviewed within a few days.
 
 ## Rebase
@@ -88,7 +88,7 @@ git push origin my-feature-branch -f
 Update the [CHANGELOG](CHANGELOG.md) with the pull request number. A typical entry looks as follows.
 
 ```
-* [#123](https://github.com/CoCreateJS/CoCreate-industry/pull/123): Reticulated splines - [@contributor](https://github.com/contributor).
+* [#123](https://github.com/CoCreateJS/industry/pull/123): Reticulated splines - [@contributor](https://github.com/contributor).
 ```
 
 Amend your previous commit and force push the changes.
