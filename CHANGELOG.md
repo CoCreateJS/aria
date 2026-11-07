@@ -1,3 +1,10 @@
+## [2.0.2](https://github.com/CoCreateJS/aria/compare/v2.0.1...v2.0.2) (2026-11-07)
+
+
+### Bug Fixes
+
+* bump CoCreate dependency versions ([624551d](https://github.com/CoCreateJS/aria/commit/624551d1d70c1dd26b0b549eb3540d0308a9680c))
+
 ## [2.0.1](https://github.com/CoCreateJS/aria/compare/v2.0.0...v2.0.1) (2026-11-05)
 
 
